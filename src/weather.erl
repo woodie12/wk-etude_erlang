@@ -7,18 +7,41 @@
          handle_cast/2,
          handle_info/2,
          terminate/2,
-         code_change/3]). % gen_server callbacks
+         code_change/3]). 
+-export([connect/1,
+         report/1,
+         recent/0]). % wrapper functions
+
 -define(SERVER, ?MODULE). % macro that just defines this module as server
+
+%% @doc Connect to a named server
+connect(ServerName) ->
+  Result = net_adm:ping(ServerName),
+  case Result of
+    pong -> io:format("Connected to server.~n");
+    pang -> io:format("Cannot connect to ~p.~n", [ServerName])
+  end.
+
+%% Wrapper to hide internal details when getting a weather report
+report(Station) ->
+  gen_server:call({global, ?SERVER}, Station).
+
+%% Wrapper to hide internal details when getting a list of recently used
+%% stations.
+recent() ->
+  gen_server:call({global, ?SERVER}, recent).
 
 %%% convenience method for startup
 start_link() ->
-        gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+  gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
 
 %%% gen_server callbacks
 init([]) ->
   inets:start(),
   {ok, []}.
 
+handle_call(recent, _From, State) ->
+  {reply, State, State};
 handle_call(Request, _From, State) ->
   {Reply, NewState} = get_weather(Request, State),
   {reply, Reply, NewState}.
@@ -37,12 +60,7 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-%%% Internal functions
 
-%% Given a 4-letter station code as the Request, return its basic
-%% weather information as a {key,value} list. If successful, add the
-%% station name to the State, which will keep track of recently-accessed
-%% weather stations.
 
 get_weather(Request, State) ->
   URL = "http://w1.weather.gov/xml/current_obs/" ++ Request ++ ".xml",
@@ -91,4 +109,3 @@ extract_text(Content) ->
     xmlText -> Item#xmlText.value;
     _ -> ""
   end.
- 

@@ -16,3 +16,4 @@ alert([Head | Tail ], ToothNumber, Result ) ->
     true -> alert(Tail, ToothNumber + 1, [ToothNumber | Result]);
     false -> alert(Tail, ToothNumber + 1, Result)
   end.
+
