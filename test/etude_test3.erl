@@ -12,32 +12,46 @@
 -include_lib("eunit/include/eunit.hrl").
 -define(setup(F), {setup, fun start/0, fun stop/1, F}).
 
-%% unit test for chatroom 
-
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TESTS DESCRIPTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_stop_test_() ->
-  {"33The server can be started, stopped and has a registered name",
-   ?setup(fun is_registered/1)}.
+    {"The server can be started, stopped and has a registered name",
+    {setup,
+            fun start/0,
+            fun stop/1,
+            fun is_registered/1}}.
 
+log_in_test_() -> 
+    {"check we could get the weather",
+      ?setup(fun check_login/1)
+    }. 
 
-% register_test_() ->
-%   [{"A process can be registered and logged in",
-%       ?setup(fun logged_in/2)}
-%       % {setup, fun person_start/0, fun stop/1, fun logged_in/2}}
-%   ].
-
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% SETUP FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%
 start() ->
-  person:start_link().
-  
+    {ok, Pid} = person:start_link(),
+    Pid.
  
 stop(_) ->
-  person: terminate(test,[]).
-
+    ok.
+ 
+%%%%%%%%%%%%%%%%%%%%
+%%% ACTUAL TESTS %%%
+%%%%%%%%%%%%%%%%%%%%
 is_registered(Pid) ->
-    [?_assert(erlang:is_process_alive(Pid)),
-    ?_assertEqual(Pid, whereis(person))].
+[?_assert(erlang:is_process_alive(Pid))].
 
-% logged_in(_,_) ->
-%   [
-%   ?_assertMatch({value,{{_,_},_}},person:say("hello"))].
+check_login(_) ->
+  Res = person:login("user"),
+  % Res = weather:report("XXXX"),
+  [?_assertMatch({login, "user", _}, Res)].
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HELPER FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 -endif.

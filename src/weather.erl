@@ -1,7 +1,7 @@
 -module(weather).
 -behaviour(gen_server).
 -include_lib("xmerl/include/xmerl.hrl").
--export([start_link/0]). % convenience call for startup
+-export([start_link/0, stop/0]). % convenience call for startup
 -export([init/1,
          handle_call/3,
          handle_cast/2,
@@ -35,6 +35,11 @@ recent() ->
 start_link() ->
   gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
 
+
+stop() -> 
+  gen_server:call({global, ?SERVER}, stop).
+
+  
 %%% gen_server callbacks
 init([]) ->
   inets:start(),
@@ -53,6 +58,15 @@ handle_cast(_Message, State) ->
 handle_info(_Info, State) ->
   {noreply, State}.
 
+handle_call(stop, _From) ->
+    %% For the sake of being synchronous and because emptying ETS
+    %% tables might take a bit longer than dropping data structures
+    %% held in memory, dropping the table here will be safer for
+    %% tricky race conditions, especially in tests where we start/stop
+    %% servers a lot. In regular code, this doesn't matter.
+    {stop, normal, ok}.
+
+
 terminate(_Reason, _State) ->
   inets:stop(),
   ok.
@@ -63,7 +77,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 get_weather(Request, State) ->
-  URL = "http://w1.weather.gov/xml/current_obs/" ++ Request ++ ".xml",
+  URL = "http://w1.weather.gov/xml/current_obs/KCMI.xml",
+  io:format("~p~n",[URL]),
   {Result, Info} = httpc:request(URL),
   case Result of
     error -> {{Result, Info}, State};

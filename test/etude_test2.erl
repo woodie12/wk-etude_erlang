@@ -10,28 +10,49 @@
 -author("wan").
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-define(setup(F), {setup, fun start/0, fun stop/1, F}).
 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TESTS DESCRIPTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_stop_test_() ->
-  {"22The server can be started, stopped and has a registered name",
+    {"The server can be started, stopped and has a registered name",
     {setup,
-      fun start/0,
-      fun stop/1,
-      fun is_registered/1}}.
+            fun start/0,
+            fun stop/1,
+            fun is_registered/1}}.
 
+weather_test_() -> 
+    {"check we could get the weather",
+      ?setup(fun checkweather/1)
+    }. 
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% SETUP FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%
 start() ->
-  io:format("start function"),
-  {ok, Pid} = weather_sup:start_link(),
-  Pid.
-
+    {ok, Pid} = weather:start_link(),
+    Pid.
+ 
 stop(_) ->
-io:format("stop function").
-
+    weather:stop().
+ 
+%%%%%%%%%%%%%%%%%%%%
+%%% ACTUAL TESTS %%%
+%%%%%%%%%%%%%%%%%%%%
 is_registered(Pid) ->
-  [?_assert(erlang:is_process_alive(Pid)),
-    ?_assertEqual(Pid, whereis(weather_sup))
-    % ?_assertMatch({{error, 404}, _},weather:get_weather("XXXX", []))
-    ].
+[?_assert(erlang:is_process_alive(Pid))].
 
+checkweather(_) ->
+  {ok, Detail} = weather:report("KCMI"),
+  % Res = weather:report("XXXX"),
+  [?_assertMatch([{location,"Champaign / Urbana, University of Illinois-Willard, IL"}
+      ,{observation_time_rfc822,_},{weather,_},
+      {temperature_string,_}], Detail)].
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HELPER FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
