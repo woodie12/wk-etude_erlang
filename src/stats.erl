@@ -1,10 +1,15 @@
 -module(stats).
 -export([minimum/1, maximum/1, range/1, mean/1, stdv/1, stdv_sums/2]).
 
+
 -spec(minimum(list()) -> number()).
 
 minimum(NumberList) ->
-  minimum(NumberList, hd(NumberList)).
+  try minimum(NumberList, hd(NumberList)) of
+    Answer -> Answer
+  catch
+    error:Error -> {error, Error}
+  end.
 
 minimum([], Result) -> Result;
 
@@ -14,10 +19,15 @@ minimum([Head|Tail], Result) ->
     false -> minimum(Tail, Result)
   end.
 
+
 -spec(maximum(list()) -> number()).
 
 maximum(NumberList) ->
-  maximum(NumberList, hd(NumberList)).
+  try
+    maximum(NumberList, hd(NumberList))
+  catch
+    error:Error-> {error, Error}
+  end.
 
 maximum([], Result) -> Result;
 
@@ -31,18 +41,34 @@ maximum([Head|Tail], Result) ->
 
 range(NumberList) -> [minimum(NumberList), maximum(NumberList)].
 
--spec(mean(list) -> float()).
+%% @doc Return the mean of the list.
+-spec(mean(list()) -> float()).
 
 mean(NumberList) ->
-  Sum = lists:foldl(fun(V, A) -> V + A end, 0, NumberList),
-  Sum / length(NumberList).
+  try
+    Sum = lists:foldl(fun(V, A) -> V + A end, 0, NumberList),
+    Sum / length(NumberList)
+  catch
+    error:Error -> {error, Error}
+  end.
+
+%% @doc Helper function to generate sums and sums of squares
+%% when calculating standard deviation.
+
+-spec(stdv_sums(number(),[number()]) -> [number()]).
 
 stdv_sums(Value, Accumulator) ->
   [Sum, SumSquares] = Accumulator,
   [Sum + Value, SumSquares + Value * Value].
-  
+
+
+-spec(stdv([number()]) -> float()).
+
 stdv(NumberList) ->
   N = length(NumberList),
-  [Sum, SumSquares] = lists:foldl(fun stdv_sums/2, [0, 0], NumberList),
-  math:sqrt((N * SumSquares - Sum * Sum) / (N * (N - 1))).
-  
+  try
+    [Sum, SumSquares] = lists:foldl(fun stdv_sums/2, [0, 0], NumberList),
+    math:sqrt((N * SumSquares - Sum * Sum) / (N * (N - 1)))
+  catch
+    error:Error -> {error, Error}
+  end.

@@ -32,10 +32,15 @@ log_in_test_() ->
 %%% SETUP FUNCTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 start() ->
-    {ok, Pid} = person:start_link(),
+{ok, Host} = inet:gethostname(),
+  {ok,Pid}=person:start_link(make_distrib("tests3@"++Host, shortnames)),
+  stop_distrib(),
+
+    % {ok, Pid} = person:start_link(),
     Pid.
  
 stop(_) ->
+stop_distrib(),
     ok.
  
 %%%%%%%%%%%%%%%%%%%%
@@ -53,5 +58,21 @@ check_login(_) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 
+-spec make_distrib( NodeName::string()|atom(), NodeType::shortnames | longnames) ->
+    {ok, ActualNodeName::atom} | {error, Reason::term()}.
+make_distrib(NodeName, NodeType) when is_list(NodeName) ->
+    make_distrib(erlang:list_to_atom(NodeName), NodeType);
+make_distrib(NodeName, NodeType) ->
+    case node() of
+        'nonode@nohost' -> 
+            [] = os:cmd("epmd -daemon"),
+            case net_kernel:start([NodeName, NodeType]) of 
+                {ok, _Pid} -> node() 
+            end;
+        CurrNode -> CurrNode
+    end.
+
+stop_distrib()->
+    net_kernel:stop().
 
 -endif.
